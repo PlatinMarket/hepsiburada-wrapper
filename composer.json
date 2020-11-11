@@ -1,0 +1,15 @@
+{
+    "name": "huseyin/hepsiburada-wrapper",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Hkrabs",
+            "email": "hkarabas@yandex.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^7.0",
+        "ext-json": "*",
+        "ext-http": "*"
+    }
+}

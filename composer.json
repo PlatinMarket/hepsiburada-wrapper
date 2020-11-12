@@ -1,15 +1,22 @@
 {
     "name": "huseyin/hepsiburada-wrapper",
     "type": "library",
+    "description": "",
     "authors": [
         {
-            "name": "Hkrabs",
-            "email": "hkarabas@yandex.com"
+            "name": "Huseyin Karabas",
+            "email": "huseyinkarabas@platinmarket.com"
         }
     ],
     "require": {
         "guzzlehttp/guzzle": "^7.0",
+        "spatie/array-to-xml": "^2.15",
         "ext-json": "*",
-        "ext-http": "*"
+        "ext-simplexml": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Hepsiburada\\": "src/"
+        }
     }
 }

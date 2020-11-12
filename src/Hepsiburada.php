@@ -1,6 +1,12 @@
 <?php
 
+namespace Hepsiburada;
 
+use GuzzleHttp;
+
+/**
+ * Class Hepsiburada
+ */
 class Hepsiburada
 {
     protected $username;
@@ -9,6 +15,10 @@ class Hepsiburada
     protected $token;
     protected $client;
     protected $generalHeaders;
+    protected $basicAuthInfo;
+
+    private $listingSitUri = 'https://listing-external-sit.hepsiburada.com';
+    private $mpopSitUri = 'https://mpop-sit.hepsiburada.com';
 
     /**
      * Hepsiburada constructor.
@@ -16,7 +26,7 @@ class Hepsiburada
      * @param $password
      * @param string $merchantId
      */
-    public function __construct($username, $password, $merchantId = '')
+    public function __construct($username, $password, $merchantId)
     {
         $this->username = $username;
         $this->password = $password;
@@ -24,11 +34,16 @@ class Hepsiburada
 
         $this->client = new GuzzleHttp\Client();
 
-        $this->generateToken();
+        $this->setToken($this->generateToken());
 
         $this->generalHeaders = [
-            'Authorization' => sprintf('Bearer %s', $this->token),
+            'Authorization' => \sprintf('Bearer %s', $this->token),
             'Accept' => 'application/json'
+        ];
+
+        $this->basicAuthInfo = [
+            $this->username,
+            $this->password
         ];
     }
 
@@ -88,6 +103,9 @@ class Hepsiburada
         return $this->token;
     }
 
+    /**
+     * @param $token
+     */
     public function setToken($token)
     {
         $this->token = $token;
@@ -99,7 +117,9 @@ class Hepsiburada
      */
     public function generateToken()
     {
-        $response = $this->client->request('POST', 'https://mpop-sit.hepsiburada.com/api/authenticate', [
+        $uri = \sprintf('%s/api/authenticate', $this->mpopSitUri);
+
+        $response = $this->client->request('POST', $uri, [
             'json' => [
                 'username' => $this->username,
                 'password' => $this->password,
@@ -107,11 +127,9 @@ class Hepsiburada
             ]
         ]);
 
-        if (!($token = json_decode($response->getBody(), true)['id_token'])) {
-            throw new Exception('Getting token error.');
+        if (!($token = \json_decode($response->getBody(), true)['id_token'])) {
+            throw new \Exception('Getting token error.');
         }
-
-        $this->token = $token;
 
         return $token;
     }
@@ -129,34 +147,194 @@ class Hepsiburada
             'size' => $size
         ];
 
-        $query = http_build_query($parameters);
+        $query = \http_build_query($parameters);
 
         if (!empty($page) || !empty($size)) {
-            $query = sprintf('?%s', $query);
+            $query = \sprintf('?%s', $query);
         }
 
-        $uri = sprintf('https://mpop-sit.hepsiburada.com/product/api/categories/get-all-categories%s', $query);
+        $uri = \sprintf('%s/product/api/categories/get-all-categories%s', $this->mpopSitUri, $query);
 
         $response = $this->client->request('GET', $uri, [
             'headers' => $this->generalHeaders
         ]);
 
-        return json_decode($response->getBody(), true);
+        return \json_decode($response->getBody(), true);
     }
 
-    public function getListings() {
-        $uri = sprintf(
-            'https://listing-external-sit.hepsiburada.com/listings/merchantid/%s',
+    /**
+     * @param $json
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function sendProducts($json)
+    {
+        $tempFile = \tempnam(\sys_get_temp_dir(), 'products');
+
+        // Convert text JSON to a temp file so it can be uploaded
+        $newTempFile = \sprintf('%s.json', $tempFile);
+        \rename($tempFile, $newTempFile);
+        $tempFile = $newTempFile;
+        \file_put_contents($tempFile, $json);
+
+        $uri = \sprintf('%s/product/api/products/import', $this->mpopSitUri);
+
+        $response = $this->client->request('POST',
+            $uri, [
+                'multipart' => [
+                    [
+                        'name' => 'file',
+                        'contents' => \fopen($tempFile, 'rb')
+                    ]
+                ],
+                'headers' => $this->generalHeaders
+            ]);
+
+        return $response;
+    }
+
+    /**
+     * @param $trackingId
+     * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function productSendingStatus($trackingId) {
+        $uri = \sprintf('%s/product/api/products/status/%s', $this->mpopSitUri, $trackingId);
+
+        $response = $this->client->request('GET', $uri, [
+            'headers' => $this->generalHeaders
+        ]);
+
+        return \json_decode($response->getBody(), true);
+    }
+
+    /**
+     * @return mixed
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function fetchListings()
+    {
+        $uri = \sprintf(
+            '%s/listings/merchantid/%s',
+            $this->listingSitUri,
             $this->merchantId
         );
 
         $response = $this->client->request('GET', $uri, [
-            'auth' => [
-                $this->username,
-                $this->password
+            'auth' => $this->basicAuthInfo
+        ]);
+
+        $listings = $this->streamToText($response->getBody());
+
+        return \json_decode($listings, true);
+    }
+
+    /**
+     * @param $sku
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function activateListing($sku)
+    {
+        $uri = \sprintf(
+            '%s/listings/merchantid/%s/sku/%s/activate',
+            $this->listingSitUri,
+            $this->merchantId,
+            $sku
+        );
+
+        $response = $this->client->request('POST', $uri, [
+            'auth' => $this->basicAuthInfo
+        ]);
+
+        return $response;
+    }
+
+    /**
+     * @param $sku
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function deactivateListing($sku)
+    {
+        $uri = \sprintf(
+            '%s/listings/merchantid/%s/sku/%s/deactivate',
+            $this->listingSitUri,
+            $this->merchantId,
+            $sku
+        );
+
+        $response = $this->client->request('POST', $uri, [
+            'auth' => $this->basicAuthInfo
+        ]);
+
+        return $response;
+    }
+
+    /**
+     * @param $data
+     * @return \Psr\Http\Message\StreamInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    public function createOrUpdateListing($data)
+    {
+        $root = [
+            'rootElementName' => 'listings',
+            '_attributes' => [
+                'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+                'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
             ]
+        ];
+
+        $xml = \Spatie\ArrayToXml\ArrayToXml::convert(['listing' => $data], $root);
+
+        $uri = \sprintf(
+            '%s/listings/merchantid/%s/inventory-uploads',
+            $this->listingSitUri,
+            $this->merchantId
+        );
+
+        $response = $this->client->request('POST', $uri, [
+            'body' => $xml,
+            'auth' => $this->basicAuthInfo
         ]);
 
         return $response->getBody();
+    }
+
+    /**
+     * @param $trackingId
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws GuzzleHttp\Exception\GuzzleException
+     */
+    public function listingUpdateStatus($trackingId)
+    {
+        $uri = \sprintf(
+            '%s/listings/merchantid/%s/inventory-uploads/id/%s',
+            $this->listingSitUri,
+            $this->merchantId,
+            $trackingId
+        );
+
+        $response = $this->client->request('GET', $uri, [
+            'auth' => $this->basicAuthInfo
+        ]);
+
+        return $response;
+    }
+
+    /**
+     * @param $body
+     * @return string
+     */
+    protected function streamToText($body)
+    {
+        $buffer = "";
+
+        while (!$body->eof()) {
+            $buffer .= $body->read(1024);
+        }
+
+        return $buffer;
     }
 }

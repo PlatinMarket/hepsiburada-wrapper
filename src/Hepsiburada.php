@@ -212,12 +212,24 @@ class Hepsiburada
      * @return mixed
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function fetchListings()
+    public function fetchListings($offset = null, $limit = null)
     {
+        $parameters = [
+            'offset' => $offset,
+            'limit' => $limit
+        ];
+
+        $query = \http_build_query($parameters);
+
+        if (!empty($offset) || !empty($limit)) {
+            $query = \sprintf('?%s', $query);
+        }
+
         $uri = \sprintf(
-            '%s/listings/merchantid/%s',
+            '%s/listings/merchantid/%s%s',
             $this->listingSitUri,
-            $this->merchantId
+            $this->merchantId,
+            $query
         );
 
         $response = $this->client->request('GET', $uri, [
@@ -231,7 +243,7 @@ class Hepsiburada
 
     /**
      * @param $sku
-     * @return \Psr\Http\Message\ResponseInterface
+     * @return bool
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function activateListing($sku)
@@ -243,16 +255,21 @@ class Hepsiburada
             $sku
         );
 
-        $response = $this->client->request('POST', $uri, [
-            'auth' => $this->basicAuthInfo
-        ]);
+        try {
+            $response = $this->client->request('POST', $uri, [
+                'auth' => $this->basicAuthInfo
+            ]);
 
-        return $response;
+            return $response->getReasonPhrase() === 'OK';
+        }
+        catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
      * @param $sku
-     * @return \Psr\Http\Message\ResponseInterface
+     * @return bool
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
     public function deactivateListing($sku)
@@ -264,11 +281,16 @@ class Hepsiburada
             $sku
         );
 
-        $response = $this->client->request('POST', $uri, [
-            'auth' => $this->basicAuthInfo
-        ]);
+        try {
+            $response = $this->client->request('POST', $uri, [
+                'auth' => $this->basicAuthInfo
+            ]);
 
-        return $response;
+            return $response->getReasonPhrase() === 'OK';
+        }
+        catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -299,7 +321,9 @@ class Hepsiburada
             'auth' => $this->basicAuthInfo
         ]);
 
-        return $response->getBody();
+        $body = $this->streamToText($response->getBody());
+
+        return \json_decode($response->getBody(), true);
     }
 
     /**
@@ -321,6 +345,33 @@ class Hepsiburada
         ]);
 
         return $response;
+    }
+
+    /**
+     * @param $sku
+     * @param $merchantSku
+     * @return bool
+     * @throws GuzzleHttp\Exception\GuzzleException
+     */
+    public function deleteListing($sku, $merchantSku) {
+        $uri = \sprintf(
+            '%s/listings/merchantid/%s/sku/%s/merchantsku/%s',
+            $this->listingSitUri,
+            $this->merchantId,
+            $sku,
+            $merchantSku
+        );
+
+        try {
+            $response = $this->client->request('DELETE', $uri, [
+                'auth' => $this->basicAuthInfo
+            ]);
+
+            return $response->getReasonPhrase() === 'OK';
+        }
+        catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**

@@ -113,7 +113,7 @@ class Hepsiburada
 
     /**
      * @return mixed
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws GuzzleHttp\Exception\GuzzleException
      */
     public function generateToken()
     {
@@ -194,11 +194,24 @@ class Hepsiburada
     }
 
     /**
+     * @param $array
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws GuzzleHttp\Exception\GuzzleException
+     */
+    public function sendProductsAsArray($array)
+    {
+        $json = json_encode($array);
+
+        return $this->sendProducts($json);
+    }
+
+    /**
      * @param $trackingId
      * @return mixed
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function productSendingStatus($trackingId) {
+    public function productSendingStatus($trackingId)
+    {
         $uri = \sprintf('%s/product/api/products/status/%s', $this->mpopSitUri, $trackingId);
 
         $response = $this->client->request('GET', $uri, [
@@ -298,7 +311,7 @@ class Hepsiburada
      * @return \Psr\Http\Message\StreamInterface
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function createOrUpdateListing($data)
+    public function createOrUpdateListing(array $data)
     {
         $root = [
             'rootElementName' => 'listings',
@@ -353,7 +366,8 @@ class Hepsiburada
      * @return bool
      * @throws GuzzleHttp\Exception\GuzzleException
      */
-    public function deleteListing($sku, $merchantSku) {
+    public function deleteListing($sku, $merchantSku)
+    {
         $uri = \sprintf(
             '%s/listings/merchantid/%s/sku/%s/merchantsku/%s',
             $this->listingSitUri,

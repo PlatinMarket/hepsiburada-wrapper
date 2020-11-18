@@ -5,78 +5,118 @@ namespace Hepsiburada;
 use GuzzleHttp;
 
 /**
- * Class Hepsiburada
+ * Hepsiburada REST API PHP Wrapper
  */
 class Hepsiburada
 {
-    protected $username;
-    protected $password;
-    protected $merchantId;
-    protected $token;
-    protected $client;
-    protected $generalHeaders;
-    protected $basicAuthInfo;
-
-    private $listingSitUri = 'https://listing-external-sit.hepsiburada.com';
-    private $mpopSitUri = 'https://mpop-sit.hepsiburada.com';
+    /**
+     * @var string Hepsiburada integration username
+     */
+    protected $_username;
 
     /**
-     * Hepsiburada constructor.
+     * @var string Hepsiburada integration password
+     */
+    protected $_password;
+
+    /**
+     * @var string Hepsiburada integration merchant Id
+     */
+    protected $_merchantId;
+
+    /**
+     * @var string The variable that will store generated JWT token by username and password
+     */
+    protected $_token;
+
+    /**
+     * @var GuzzleHttp\Client REST API client to use Hepsiburada integration API
+     */
+    protected $_client;
+
+    /**
+     * @var array Header data to use Hepsiburada catalog methods by JWT token authorization
+     */
+    protected $_generalHeaders;
+
+    /**
+     * @var array Auth data to use listing methods by HTTP basic authentication
+     */
+    protected $_basicAuthInfo;
+
+    /**
+     * @var string Endpoint location to use listing methods
+     */
+    private $_listingSitUri = 'https://listing-external-sit.hepsiburada.com';
+
+    /**
+     * @var string Endpoint location to use Hepsiburada catalog methods
+     */
+    private $_mpopSitUri = 'https://mpop-sit.hepsiburada.com';
+
+    /**
+     * The Hepsiburada integration username, password and merchant Id
+     * should be passed to the constructor.
+     *
+     * Example usage:
+     *
+     *      $hb = new Hepsiburada('<USERNAME>', '<PASSWORD>', '<MERCHANT_ID>');
+     *
      * @param $username
      * @param $password
      * @param string $merchantId
      */
     public function __construct($username, $password, $merchantId)
     {
-        $this->username = $username;
-        $this->password = $password;
-        $this->merchantId = $merchantId;
+        $this->_username = $username;
+        $this->_password = $password;
+        $this->_merchantId = $merchantId;
 
-        $this->client = new GuzzleHttp\Client();
+        $this->_client = new HepsiburadaRestClient();
 
         $this->setToken($this->generateToken());
 
-        $this->generalHeaders = [
-            'Authorization' => \sprintf('Bearer %s', $this->token),
+        $this->_generalHeaders = [
+            'Authorization' => \sprintf('Bearer %s', $this->_token),
             'Accept' => 'application/json'
         ];
 
-        $this->basicAuthInfo = [
-            $this->username,
-            $this->password
+        $this->_basicAuthInfo = [
+            $this->_username,
+            $this->_password
         ];
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getUsername()
     {
-        return $this->username;
+        return $this->_username;
     }
 
     /**
-     * @param $username
+     * @param string $username
      */
     public function setUsername($username)
     {
-        $this->username = $username;
+        $this->_username = $username;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getPassword()
     {
-        return $this->password;
+        return $this->_password;
     }
 
     /**
-     * @param $password
+     * @param string $password
      */
     public function setPassword($password)
     {
-        $this->password = $password;
+        $this->_password = $password;
     }
 
     /**
@@ -84,45 +124,45 @@ class Hepsiburada
      */
     public function getMerchantId()
     {
-        return $this->merchantId;
+        return $this->_merchantId;
     }
 
     /**
-     * @param $merchantId
+     * @param string $merchantId
      */
     public function setMerchantId($merchantId)
     {
-        $this->merchantId = $merchantId;
+        $this->_merchantId = $merchantId;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getToken()
     {
-        return $this->token;
+        return $this->_token;
     }
 
     /**
-     * @param $token
+     * @param string $token
      */
     public function setToken($token)
     {
-        $this->token = $token;
+        $this->_token = $token;
     }
 
     /**
-     * @return mixed
-     * @throws GuzzleHttp\Exception\GuzzleException
+     * @return string
+     * @throws HepsiburadaException
      */
     public function generateToken()
     {
-        $uri = \sprintf('%s/api/authenticate', $this->mpopSitUri);
+        $uri = \sprintf('%s/api/authenticate', $this->_mpopSitUri);
 
-        $response = $this->client->request('POST', $uri, [
+        $response = $this->_client->request('POST', $uri, [
             'json' => [
-                'username' => $this->username,
-                'password' => $this->password,
+                'username' => $this->_username,
+                'password' => $this->_password,
                 'authenticationType' => 'INTEGRATOR'
             ]
         ]);
@@ -135,10 +175,10 @@ class Hepsiburada
     }
 
     /**
-     * @param null $page
-     * @param null $size
-     * @return mixed
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @param int|string $page
+     * @param int|string $size
+     * @return array
+     * @throws HepsiburadaException
      */
     public function fetchCategories($page = null, $size = null)
     {
@@ -153,19 +193,19 @@ class Hepsiburada
             $query = \sprintf('?%s', $query);
         }
 
-        $uri = \sprintf('%s/product/api/categories/get-all-categories%s', $this->mpopSitUri, $query);
+        $uri = \sprintf('%s/product/api/categories/get-all-categories%s', $this->_mpopSitUri, $query);
 
-        $response = $this->client->request('GET', $uri, [
-            'headers' => $this->generalHeaders
+        $response = $this->_client->request('GET', $uri, [
+            'headers' => $this->_generalHeaders
         ]);
 
-        return \json_decode($response->getBody(), true);
+        return (array) \json_decode($response->getBody(), true);
     }
 
     /**
      * @param $json
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws HepsiburadaException
      */
     public function sendProducts($json)
     {
@@ -177,9 +217,9 @@ class Hepsiburada
         $tempFile = $newTempFile;
         \file_put_contents($tempFile, $json);
 
-        $uri = \sprintf('%s/product/api/products/import', $this->mpopSitUri);
+        $uri = \sprintf('%s/product/api/products/import', $this->_mpopSitUri);
 
-        $response = $this->client->request('POST',
+        $response = $this->_client->request('POST',
             $uri, [
                 'multipart' => [
                     [
@@ -187,7 +227,7 @@ class Hepsiburada
                         'contents' => \fopen($tempFile, 'rb')
                     ]
                 ],
-                'headers' => $this->generalHeaders
+                'headers' => $this->_generalHeaders
             ]);
 
         return $response;
@@ -196,7 +236,7 @@ class Hepsiburada
     /**
      * @param $array
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws GuzzleHttp\Exception\GuzzleException
+     * @throws HepsiburadaException
      */
     public function sendProductsAsArray($array)
     {
@@ -207,23 +247,23 @@ class Hepsiburada
 
     /**
      * @param $trackingId
-     * @return mixed
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @return array
+     * @throws HepsiburadaException
      */
     public function productSendingStatus($trackingId)
     {
-        $uri = \sprintf('%s/product/api/products/status/%s', $this->mpopSitUri, $trackingId);
+        $uri = \sprintf('%s/product/api/products/status/%s', $this->_mpopSitUri, $trackingId);
 
-        $response = $this->client->request('GET', $uri, [
-            'headers' => $this->generalHeaders
+        $response = $this->_client->request('GET', $uri, [
+            'headers' => $this->_generalHeaders
         ]);
 
-        return \json_decode($response->getBody(), true);
+        return (array) \json_decode($response->getBody(), true);
     }
 
     /**
-     * @return mixed
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @return array
+     * @throws HepsiburadaException
      */
     public function fetchListings($offset = null, $limit = null)
     {
@@ -240,37 +280,37 @@ class Hepsiburada
 
         $uri = \sprintf(
             '%s/listings/merchantid/%s%s',
-            $this->listingSitUri,
-            $this->merchantId,
+            $this->_listingSitUri,
+            $this->_merchantId,
             $query
         );
 
-        $response = $this->client->request('GET', $uri, [
-            'auth' => $this->basicAuthInfo
+        $response = $this->_client->request('GET', $uri, [
+            'auth' => $this->_basicAuthInfo
         ]);
 
-        $listings = $this->streamToText($response->getBody());
+        $listings = $this->_streamToText($response->getBody());
 
-        return \json_decode($listings, true);
+        return (array) \json_decode($listings, true);
     }
 
     /**
      * @param $sku
      * @return bool
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws HepsiburadaException
      */
     public function activateListing($sku)
     {
         $uri = \sprintf(
             '%s/listings/merchantid/%s/sku/%s/activate',
-            $this->listingSitUri,
-            $this->merchantId,
+            $this->_listingSitUri,
+            $this->_merchantId,
             $sku
         );
 
         try {
-            $response = $this->client->request('POST', $uri, [
-                'auth' => $this->basicAuthInfo
+            $response = $this->_client->request('POST', $uri, [
+                'auth' => $this->_basicAuthInfo
             ]);
 
             return $response->getReasonPhrase() === 'OK';
@@ -283,20 +323,20 @@ class Hepsiburada
     /**
      * @param $sku
      * @return bool
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws HepsiburadaException
      */
     public function deactivateListing($sku)
     {
         $uri = \sprintf(
             '%s/listings/merchantid/%s/sku/%s/deactivate',
-            $this->listingSitUri,
-            $this->merchantId,
+            $this->_listingSitUri,
+            $this->_merchantId,
             $sku
         );
 
         try {
-            $response = $this->client->request('POST', $uri, [
-                'auth' => $this->basicAuthInfo
+            $response = $this->_client->request('POST', $uri, [
+                'auth' => $this->_basicAuthInfo
             ]);
 
             return $response->getReasonPhrase() === 'OK';
@@ -308,8 +348,8 @@ class Hepsiburada
 
     /**
      * @param $data
-     * @return \Psr\Http\Message\StreamInterface
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @return array
+     * @throws HepsiburadaException
      */
     public function createOrUpdateListing(array $data)
     {
@@ -325,36 +365,36 @@ class Hepsiburada
 
         $uri = \sprintf(
             '%s/listings/merchantid/%s/inventory-uploads',
-            $this->listingSitUri,
-            $this->merchantId
+            $this->_listingSitUri,
+            $this->_merchantId
         );
 
-        $response = $this->client->request('POST', $uri, [
+        $response = $this->_client->request('POST', $uri, [
             'body' => $xml,
-            'auth' => $this->basicAuthInfo
+            'auth' => $this->_basicAuthInfo
         ]);
 
-        $body = $this->streamToText($response->getBody());
+        $body = $this->_streamToText($response->getBody());
 
-        return \json_decode($response->getBody(), true);
+        return (array) \json_decode($response->getBody(), true);
     }
 
     /**
      * @param $trackingId
      * @return \Psr\Http\Message\ResponseInterface
-     * @throws GuzzleHttp\Exception\GuzzleException
+     * @throws HepsiburadaException
      */
     public function listingUpdateStatus($trackingId)
     {
         $uri = \sprintf(
             '%s/listings/merchantid/%s/inventory-uploads/id/%s',
-            $this->listingSitUri,
-            $this->merchantId,
+            $this->_listingSitUri,
+            $this->_merchantId,
             $trackingId
         );
 
-        $response = $this->client->request('GET', $uri, [
-            'auth' => $this->basicAuthInfo
+        $response = $this->_client->request('GET', $uri, [
+            'auth' => $this->_basicAuthInfo
         ]);
 
         return $response;
@@ -364,21 +404,21 @@ class Hepsiburada
      * @param $sku
      * @param $merchantSku
      * @return bool
-     * @throws GuzzleHttp\Exception\GuzzleException
+     * @throws HepsiburadaException
      */
     public function deleteListing($sku, $merchantSku)
     {
         $uri = \sprintf(
             '%s/listings/merchantid/%s/sku/%s/merchantsku/%s',
-            $this->listingSitUri,
-            $this->merchantId,
+            $this->_listingSitUri,
+            $this->_merchantId,
             $sku,
             $merchantSku
         );
 
         try {
-            $response = $this->client->request('DELETE', $uri, [
-                'auth' => $this->basicAuthInfo
+            $response = $this->_client->request('DELETE', $uri, [
+                'auth' => $this->_basicAuthInfo
             ]);
 
             return $response->getReasonPhrase() === 'OK';
@@ -392,7 +432,7 @@ class Hepsiburada
      * @param $body
      * @return string
      */
-    protected function streamToText($body)
+    protected function _streamToText($body)
     {
         $buffer = "";
 

@@ -17,7 +17,6 @@ class HepsiburadaRestClient extends Client
      * @param array $options
      * @return ResponseInterface
      * @throws HepsiburadaException
-     * @throws GuzzleException
      */
     public function request(string $method, $uri = '', array $options = []): ResponseInterface
     {

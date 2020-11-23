@@ -1,11 +1,11 @@
 {
-    "name": "huseyin/hepsiburada-wrapper",
+    "name": "yinkar/hepsiburada-wrapper",
     "type": "library",
     "description": "",
     "authors": [
         {
             "name": "Huseyin Karabas",
-            "email": "huseyinkarabas@platinmarket.com"
+            "email": "hkarabas@yandex.com"
         }
     ],
     "require": {

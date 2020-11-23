@@ -2,8 +2,6 @@
 
 namespace Hepsiburada;
 
-use GuzzleHttp;
-use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 use Spatie\ArrayToXml\ArrayToXml;
 
@@ -33,7 +31,7 @@ class Hepsiburada
     protected $_token;
 
     /**
-     * @var GuzzleHttp\Client REST API client to use Hepsiburada integration API
+     * @var HepsiburadaRestClient REST API client to use Hepsiburada integration API
      */
     protected $_client;
 
@@ -68,13 +66,13 @@ class Hepsiburada
      * @param string $username
      * @param string $password
      * @param string $merchantId
-     * @throws HepsiburadaException|GuzzleException
+     * @throws HepsiburadaException
      */
     public function __construct(string $username, string $password, string $merchantId)
     {
-        $this->_username = $username;
-        $this->_password = $password;
-        $this->_merchantId = $merchantId;
+        $this->setUsername($username);
+        $this->setPassword($password);
+        $this->setMerchantId($merchantId);
 
         $this->_client = new HepsiburadaRestClient();
 
@@ -159,7 +157,7 @@ class Hepsiburada
      * Generate a JWT token to auth
      *
      * @return string
-     * @throws HepsiburadaException|GuzzleException
+     * @throws HepsiburadaException
      */
     public function generateToken()
     {
@@ -184,7 +182,7 @@ class Hepsiburada
      * @param int|string|null $page
      * @param int|string|null $size
      * @return array
-     * @throws HepsiburadaException|GuzzleException
+     * @throws HepsiburadaException
      */
     public function fetchCategories($page = null, $size = null)
     {
@@ -213,64 +211,67 @@ class Hepsiburada
      *
      * Example usage:
      *
-     * $hb->sendProducts('[
-     *      {
-     *          "categoryId": 18021982,
-     *          "merchant": "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
-     *          "attributes": {
-     *              "merchantSku": "SAMPLE-SKU-INT-0",
-     *              "VaryantGroupID": "Hepsiburada0",
-     *              "Barcode": "1234567891234",
-     *              "UrunAdi": "Roth Tyler",
-     *              "UrunAciklamasi": "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id aliquip.
-     *              Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt. Irure occaecat
-     *              sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat fugiat. Cillum pariatur
-     *              pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip id ipsum aliquip ad ut excepteur
-     *              culpa consequat aliquip. Nisi ut ex tempor enim adipisicing anim irure pariatur.\r\n",
-     *              "Marka": "Nike",
-     *              "GarantiSuresi": 24,
-     *              "kg": "1",
-     *              "tax_vat_rate": "5",
-     *              "Image1": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image2": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image3": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image4": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image5": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "renk_variant_property": "Siyah",
-     *              "ebatlar_variant_property": "Büyük Ebat"
+     *      $hb->sendProducts('[
+     *          {
+     *              "categoryId": 18021982,
+     *              "merchant": "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
+     *              "attributes": {
+     *                  "merchantSku": "SAMPLE-SKU-INT-0",
+     *                  "VaryantGroupID": "Hepsiburada0",
+     *                  "Barcode": "1234567891234",
+     *                  "UrunAdi": "Roth Tyler",
+     *                  "UrunAciklamasi": "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id
+     *                      aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.
+     *                      Irure occaecat sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat
+     *                      fugiat. Cillum pariatur pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip
+     *                      id ipsum aliquip ad ut excepteur culpa consequat aliquip. Nisi ut ex tempor enim
+     *                      adipisicing anim irure pariatur.\r\n",
+     *                  "Marka": "Nike",
+     *                  "GarantiSuresi": 24,
+     *                  "kg": "1",
+     *                  "tax_vat_rate": "5",
+     *                  "Image1": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image2": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image3": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image4": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image5": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "renk_variant_property": "Siyah",
+     *                  "ebatlar_variant_property": "Büyük Ebat"
+     *              }
+     *          },
+     *          {
+     *              "categoryId": 18021982,
+     *              "merchant": "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
+     *              "attributes": {
+     *                  "merchantSku": "SAMPLE-SKU-INT-1",
+     *                  "VaryantGroupID": "Hepsiburada1",
+     *                  "Barcode": "987654321987",
+     *                  "UrunAdi": "Roth Tyler",
+     *                  "UrunAciklamasi": "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id
+     *                      aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.
+     *                      Irure occaecat sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat
+     *                      fugiat. Cillum pariatur pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip
+     *                      id ipsum aliquip ad ut excepteur culpa consequat aliquip. Nisi ut ex tempor enim
+     *                      adipisicing anim irure pariatur.\r\n",
+     *                  "Marka": "Nike",
+     *                  "GarantiSuresi": 24,
+     *                  "kg": "1",
+     *                  "tax_vat_rate": "5",
+     *                  "Image1": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image2": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image3": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image4": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image5": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "renk_variant_property": "Kırmızı",
+     *                  "ebatlar_variant_property": "Büyük Ebat"
+     *              }
      *          }
-     *      },
-     *      {
-     *          "categoryId": 18021982,
-     *          "merchant": "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
-     *          "attributes": {
-     *              "merchantSku": "SAMPLE-SKU-INT-1",
-     *              "VaryantGroupID": "Hepsiburada1",
-     *              "Barcode": "987654321987",
-     *              "UrunAdi": "Roth Tyler",
-     *              "UrunAciklamasi": "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id aliquip.
-     *              Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt. Irure occaecat
-     *              sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat fugiat. Cillum pariatur
-     *              pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip id ipsum aliquip ad ut excepteur
-     *              culpa consequat aliquip. Nisi ut ex tempor enim adipisicing anim irure pariatur.\r\n",
-     *              "Marka": "Nike",
-     *              "GarantiSuresi": 24,
-     *              "kg": "1",
-     *              "tax_vat_rate": "5",
-     *              "Image1": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image2": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image3": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image4": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "Image5": "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *              "renk_variant_property": "Kırmızı",
-     *              "ebatlar_variant_property": "Büyük Ebat"
-     *          }
-     *      }
-     *   ]');
+     *      ]');
      *
      *
      * @param string $productsJson
      * @return string
+     * @throws HepsiburadaException
      */
     public function sendProducts(string $productsJson)
     {
@@ -284,28 +285,23 @@ class Hepsiburada
 
         $uri = \sprintf('%s/product/api/products/import', $this->_mpopSitUri);
 
-        try {
-            $response = $this->_client->request('POST',
-                $uri, [
-                    'multipart' => [
-                        [
-                            'name' => 'file',
-                            'contents' => \fopen($tempFile, 'rb')
-                        ]
-                    ],
-                    'headers' => $this->_generalHeaders
-                ]);
+        $response = $this->_client->request('POST',
+            $uri, [
+                'multipart' => [
+                    [
+                        'name' => 'file',
+                        'contents' => \fopen($tempFile, 'rb')
+                    ]
+                ],
+                'headers' => $this->_generalHeaders
+            ]);
 
-            if (
-                $response->getReasonPhrase() === 'OK'
-                &&
-                !empty($trackingId = ((array) json_decode($response->getBody(), true))['data']['trackingId'])
-            ) {
-                return $trackingId;
-            }
-        }
-        catch (HepsiburadaException|GuzzleException $e) {
-            return null;
+        if (
+            $response->getReasonPhrase() === 'OK'
+            &&
+            !empty($trackingId = ((array) json_decode($response->getBody(), true))['data']['trackingId'])
+        ) {
+            return $trackingId;
         }
 
         return null;
@@ -316,63 +312,66 @@ class Hepsiburada
      *
      * Example usage:
      *
-     * $hb->sendProductsAsArray([
-     *       [
-     *           "categoryId" => 18021982,
-     *           "merchant" => "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
-     *           "attributes" => [
-     *               "merchantSku" => "SAMPLE-SKU-INT-0",
-     *               "varyantGroupID" => "Hepsiburada0",
-     *               "Barcode" => "1234567891234",
-     *               "UrunAdi" => "Roth Tyler",
-     *               "UrunAciklamasi" => "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id
-     *               aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.
-     *               Irure occaecat sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat fugiat.
-     *               Cillum pariatur pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip id ipsum aliquip
-     *               ad ut excepteur culpa consequat aliquip. Nisi ut ex tempor enim adipisicing anim irure pariatur.",
-     *               "Marka" => "Nike",
-     *               "GarantiSuresi" => "24",
-     *               "kg" => "1",
-     *               "tax_vat_rate" => "5",
-     *               "Image1" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image2" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image3" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image4" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image5" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "renk_variant_property" => "Siyah",
-     *               "ebatlar_variant_property" => "Büyük Ebat",
-     *           ]
-     *       ],
-     *       [
-     *           "categoryId" => 18021982,
-     *           "merchant" => "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
-     *           "attributes" => [
-     *               "merchantSku" => "SAMPLE-SKU-INT-1",
-     *               "varyantGroupID" => "Hepsiburada1",
-     *               "Barcode" => "12547896523145",
-     *               "UrunAdi" => "Roth Tyler",
-     *               "UrunAciklamasi" => "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id
-     *               aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.
-     *               Irure occa*ecat sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat fugiat.
-     *               Cillum pariatur pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip id ipsum aliquip
-     *               ad ut excepteur culpa consequat aliquip. Nisi ut ex tempor enim adipisicing anim irure pariatur.",
-     *               "Marka" => "Nike",
-     *               "GarantiSuresi" => "24",
-     *               "kg" => "1",
-     *               "tax_vat_rate" => "5",
-     *               "Image1" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image2" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image3" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image4" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "Image5" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
-     *               "renk_variant_property" => "Kırmızı",
-     *               "ebatlar_variant_property" => "Küçük Ebat",
-     *           ]
-     *       ],
-     *   ]);
+     *      $hb->sendProductsAsArray([
+     *          [
+     *              "categoryId" => 18021982,
+     *              "merchant" => "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
+     *              "attributes" => [
+     *                  "merchantSku" => "SAMPLE-SKU-INT-0",
+     *                  "varyantGroupID" => "Hepsiburada0",
+     *                  "Barcode" => "1234567891234",
+     *                  "UrunAdi" => "Roth Tyler",
+     *                  "UrunAciklamasi" => "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id
+     *                      aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.
+     *                      Irure occaecat sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat
+     *                      fugiat. Cillum pariatur pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip
+     *                      id ipsum aliquip ad ut excepteur culpa consequat aliquip. Nisi ut ex tempor enim
+     *                      adipisicing anim irure pariatur.",
+     *                  "Marka" => "Nike",
+     *                  "GarantiSuresi" => "24",
+     *                  "kg" => "1",
+     *                  "tax_vat_rate" => "5",
+     *                  "Image1" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image2" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image3" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image4" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image5" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "renk_variant_property" => "Siyah",
+     *                  "ebatlar_variant_property" => "Büyük Ebat",
+     *              ]
+     *          ],
+     *          [
+     *              "categoryId" => 18021982,
+     *              "merchant" => "6fc6d90d-ee1d-4372-b3a6-264b1275e9ff",
+     *              "attributes" => [
+     *                  "merchantSku" => "SAMPLE-SKU-INT-1",
+     *                  "varyantGroupID" => "Hepsiburada1",
+     *                  "Barcode" => "12547896523145",
+     *                  "UrunAdi" => "Roth Tyler",
+     *                  "UrunAciklamasi" => "Duis enim duis magna ex veniam elit id Lorem cillum minim nisi id
+     *                      aliquip. Laboris magna id est et deserunt adipisicing tempor eu ea officia ipsum deserunt.
+     *                      Irure occaecat sit aliquip elit ipsum sint dolore quis est amet aute pariatur cupidatat
+     *                      fugiat. Cillum pariatur pariatur occaecat sint. Aliqua qui in exercitation nulla aliquip
+     *                      id ipsum aliquip ad ut excepteur culpa consequat aliquip. Nisi ut ex tempor enim
+     *                      adipisicing anim irure pariatur.",
+     *                  "Marka" => "Nike",
+     *                  "GarantiSuresi" => "24",
+     *                  "kg" => "1",
+     *                  "tax_vat_rate" => "5",
+     *                  "Image1" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image2" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image3" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image4" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "Image5" => "https://productimages.hepsiburada.net/s/27/552/10194862145586.jpg",
+     *                  "renk_variant_property" => "Kırmızı",
+     *                  "ebatlar_variant_property" => "Küçük Ebat",
+     *              ]
+     *          ],
+     *      ]);
      *
      * @param array $productsArray
      * @return string
+     * @throws HepsiburadaException
      */
     public function sendProductsAsArray(array $productsArray)
     {
@@ -384,28 +383,24 @@ class Hepsiburada
     /**
      * @param string $trackingId
      * @return array
+     * @throws HepsiburadaException
      */
     public function productSendingStatus(string $trackingId)
     {
         $uri = \sprintf('%s/product/api/products/status/%s', $this->_mpopSitUri, $trackingId);
 
-        try {
-            $response = $this->_client->request('GET', $uri, [
-                'headers' => $this->_generalHeaders
-            ]);
+        $response = $this->_client->request('GET', $uri, [
+            'headers' => $this->_generalHeaders
+        ]);
 
-            return (array) \json_decode($response->getBody(), true);
-        }
-        catch (HepsiburadaException|GuzzleException $e) {
-            return null;
-        }
+        return (array) \json_decode($response->getBody(), true);
     }
 
     /**
      * @param int|string|null $offset
      * @param int|string|null $limit
      * @return array
-     * @throws HepsiburadaException|GuzzleException
+     * @throws HepsiburadaException
      */
     public function fetchListings($offset = null, $limit = null)
     {
@@ -456,7 +451,7 @@ class Hepsiburada
 
             return $response->getReasonPhrase() === 'OK';
         }
-        catch (HepsiburadaException|GuzzleException $e) {
+        catch (HepsiburadaException $e) {
             return false;
         }
     }
@@ -481,7 +476,7 @@ class Hepsiburada
 
             return $response->getReasonPhrase() === 'OK';
         }
-        catch (HepsiburadaException|GuzzleException $e) {
+        catch (HepsiburadaException $e) {
             return false;
         }
     }
@@ -508,6 +503,7 @@ class Hepsiburada
      *
      * @param array $data
      * @return string
+     * @throws HepsiburadaException
      */
     public function createOrUpdateListing(array $data)
     {
@@ -527,23 +523,19 @@ class Hepsiburada
             $this->_merchantId
         );
 
-        try {
-            $response = $this->_client->request('POST', $uri, [
-                'body' => $xml,
-                'auth' => $this->_basicAuthInfo
-            ]);
+        $response = $this->_client->request('POST', $uri, [
+            'body' => $xml,
+            'auth' => $this->_basicAuthInfo
+        ]);
 
-            if (
-                $response->getReasonPhrase() === 'OK'
-                &&
-                !empty($trackingId = ((array) json_decode($response->getBody(), true))['id'])
-            ) {
-                return $trackingId;
-            }
+        if (
+            $response->getReasonPhrase() === 'OK'
+            &&
+            !empty($trackingId = ((array) json_decode($response->getBody(), true))['id'])
+        ) {
+            return $trackingId;
         }
-        catch (HepsiburadaException|GuzzleException $e) {
-            return null;
-        }
+
         return null;
     }
 
@@ -551,7 +543,6 @@ class Hepsiburada
      * @param string $trackingId
      * @return ResponseInterface
      * @throws HepsiburadaException
-     * @throws GuzzleException
      */
     public function listingUpdateStatus(string $trackingId)
     {
@@ -591,16 +582,16 @@ class Hepsiburada
 
             return $response->getReasonPhrase() === 'OK';
         }
-        catch (HepsiburadaException|GuzzleException $e) {
+        catch (HepsiburadaException $e) {
             return false;
         }
     }
 
     /**
-     * @param object $body
+     * @param $body
      * @return string
      */
-    protected function _streamToText(object $body)
+    protected function _streamToText($body)
     {
         $buffer = "";
 

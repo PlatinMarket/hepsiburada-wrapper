@@ -18,5 +18,10 @@
         "psr-4": {
             "Hepsiburada\\": "src/"
         }
+    },
+    "autoload": {
+        "psr-4": {
+            "Hepsiburada\\": "src/"
+        }
     }
 }

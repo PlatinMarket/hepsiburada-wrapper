@@ -19,7 +19,7 @@
             "Hepsiburada\\": "src/"
         }
     },
-    "autoload": {
+    "autoload-dev": {
         "psr-4": {
             "Hepsiburada\\": "src/"
         }

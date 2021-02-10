@@ -24,7 +24,7 @@ class HepsiburadaRestClient extends Client
             return parent::request($method, $uri, $options);
         }
         catch (GuzzleException $e) {
-            throw new HepsiburadaException($e->getMessage());
+            throw new HepsiburadaException($e);
         }
     }
 }

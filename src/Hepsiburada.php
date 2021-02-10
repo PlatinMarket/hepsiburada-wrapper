@@ -171,8 +171,10 @@ class Hepsiburada
             ]
         ]);
 
+        dd($response);
+
         if (!($token = \json_decode($response->getBody(), true)['id_token'])) {
-            throw new HepsiburadaException('Getting token error.');
+            throw new HepsiburadaException(new \Exception('Getting token error.'));
         }
 
         return $token;

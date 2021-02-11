@@ -76,10 +76,7 @@ class Hepsiburada
 
         $this->_client = new HepsiburadaRestClient();
 
-        $this->setToken($this->generateToken());
-
         $this->_generalHeaders = [
-            'Authorization' => \sprintf('Bearer %s', $this->_token),
             'Accept' => 'application/json'
         ];
 
@@ -142,7 +139,7 @@ class Hepsiburada
      */
     public function getToken()
     {
-        return $this->_token;
+        return !!$this->_token ? $this->_token : ($this->_token = $this->generateToken());
     }
 
     /**
@@ -151,6 +148,18 @@ class Hepsiburada
     public function setToken(string $token)
     {
         $this->_token = $token;
+    }
+
+    /**
+     * @param array $append
+     * @return array|string[]
+     */
+    public function getGeneralHeaders(array $append = [])
+    {
+        if (!isset($append['Authorization']) && $token = $this->getToken()) {
+            $append['Authorization'] = \sprintf('Bearer %s', $token);
+        }
+        return $this->_generalHeaders + $append;
     }
 
     /**
@@ -170,8 +179,6 @@ class Hepsiburada
                 'authenticationType' => 'INTEGRATOR'
             ]
         ]);
-
-        dd($response);
 
         if (!($token = \json_decode($response->getBody(), true)['id_token'])) {
             throw new HepsiburadaException(new \Exception('Getting token error.'));
@@ -202,7 +209,7 @@ class Hepsiburada
         $uri = \sprintf('%s/product/api/categories/get-all-categories%s', $this->_mpopSitUri, $query);
 
         $response = $this->_client->request('GET', $uri, [
-            'headers' => $this->_generalHeaders
+            'headers' => $this->getGeneralHeaders()
         ]);
 
         return (array) \json_decode($response->getBody(), true);
@@ -295,7 +302,7 @@ class Hepsiburada
                         'contents' => \fopen($tempFile, 'rb')
                     ]
                 ],
-                'headers' => $this->_generalHeaders
+                'headers' => $this->getGeneralHeaders()
             ]);
 
         if (
@@ -392,7 +399,7 @@ class Hepsiburada
         $uri = \sprintf('%s/product/api/products/status/%s', $this->_mpopSitUri, $trackingId);
 
         $response = $this->_client->request('GET', $uri, [
-            'headers' => $this->_generalHeaders
+            'headers' => $this->getGeneralHeaders()
         ]);
 
         return (array) \json_decode($response->getBody(), true);
